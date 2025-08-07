@@ -1,0 +1,17 @@
+## Interface: 30300
+## Title: DpsHelper
+## Notes: A modular DPS assistant for multiple classes with a Guitar Hero-style UI.
+## SavedVariables: DpsHelperDB
+## Version: 1.0.0
+
+Core.lua
+Config.lua
+Utils.lua
+SpellManager.lua
+TalentManager.lua
+UI.lua
+Options.lua
+Rotations\Rogue\Combat.lua
+Rotations\Rogue\Assassination.lua
+Rotations\Rogue\Subtlety.lua
+Rotations\Warrior\Fury.lua
