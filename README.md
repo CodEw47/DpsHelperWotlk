@@ -1,1 +1,110 @@
-# DpsHelperWotlk
+DpsHelper - WoW WotLK Addon
+DpsHelper is an addon for World of Warcraft: Wrath of the Lich King (interface 30400) designed to assist players in optimizing their DPS rotations, managing buffs and debuffs, and maximizing combat performance. With support for multiple classes and specializations, the addon is lightweight, configurable, and highly customizable, catering to both casual players and hardcore raiders.
+Features
+![alt text](img/warrior-fury-rotation.png)
+Intelligent Rotations: Dynamic ability suggestions based on resources (energy, rage, mana, etc.), combo points, buffs, debuffs, and combat conditions (multiple targets, bosses, etc.).
+Multi-Class Support: Includes rotations for Rogue (Combat, Assassination, Subtlety), Warrior (Fury), with planned support for Paladin, Hunter, Priest, Shaman, Mage, Warlock, Druid, and Death Knight.
+Buff/Debuff Management: Tracks remaining times for buffs (e.g., Slice and Dice, Battle Shout) and debuffs (e.g., Rupture, Rend) to ensure optimal uptime.
+Specialization Detection: Automatically identifies the player's specialization based on talent points and key talents.
+Advanced Debugging: Detailed logs (enabled via configuration) to track resources, cooldowns, and rotation decisions.
+Modular Design: Organized structure with separate files for utilities (Utils.lua), spell management (SpellManager.lua), talent detection (TalentManager.lua), and spec-specific rotations.
+
+Requirements
+
+World of Warcraft: Wrath of the Lich King (interface 30400).
+Compatible server (e.g., private servers like Warmane, Dalaran-WoW).
+Addon interface enabled in-game.
+
+Installation
+
+Download: Obtain the latest version of DpsHelper from [GitHub repository link] or [other trusted source].
+Extract: Unzip the DpsHelper folder to your WoW AddOns directory:
+Windows: C:\Program Files\World of Warcraft\Interface\AddOns
+macOS: /Applications/World of Warcraft/Interface/AddOns
+
+
+Enable Addon: Launch WoW, go to the character selection screen, click "AddOns," and ensure DpsHelper is checked.
+Restart: Log in to the game to load the addon.
+
+Usage
+
+Enable Debug Mode (optional):
+Open Config.lua and set enableDebug = true:DpsHelper.Config:Set("enableDebug", true)
+
+
+This enables detailed logs for resources, buffs, debuffs, and rotation decisions, visible in the chat window.
+
+
+In-Game:
+The addon automatically detects your class and specialization (e.g., Fury Warrior, Combat Rogue).
+Rotation suggestions are provided via the UI.lua interface (or integrate with your preferred UI addon).
+Monitor buff/debuff timers and ability suggestions to optimize your DPS.
+
+
+Customization:
+Modify rotation priorities in the respective rotation files (e.g., Rotations\Warrior\Fury.lua).
+Adjust thresholds (e.g., buff/debuff timers, resource requirements) to suit your playstyle.
+
+
+
+Supported Classes and Specializations
+
+Rogue: Combat, Assassination, Subtlety
+Warrior: Fury (more specs planned)
+Planned: Paladin, Hunter, Priest, Shaman, Mage, Warlock, Druid, Death Knight
+
+Folder Structure
+DpsHelper/
+├── Config.lua          # Configuration settings (e.g., enableDebug)
+├── Utils.lua           # Utility functions (resources, buffs, combat conditions)
+├── SpellManager.lua    # Spell detection and caching
+├── TalentManager.lua   # Specialization detection
+├── UI.lua              # User interface for rotation suggestions
+├── Rotations/
+│   ├── Rogue/
+│   │   ├── Combat.lua
+│   │   ├── Assassination.lua
+│   │   ├── Subtlety.lua
+│   ├── Warrior/
+│   │   ├── Fury.lua
+
+Debugging
+To troubleshoot issues:
+
+Enable debug mode in Config.lua (enableDebug = true).
+Check the chat window for logs, such as:DpsHelper: GetCurrentRage: 75
+DpsHelper: GetBuffRemainingTime: Battle Shout on player, remaining: 115.23 seconds
+DpsHelper: Detected specialization by points: fury (51 points)
+
+
+Verify spell availability in SpellManager.lua and specialization detection in TalentManager.lua.
+Report issues or suggest improvements via [GitHub issues link] or [contact method].
+
+Contributing
+Contributions are welcome! To contribute:
+
+Fork the repository.
+Create a new branch for your feature or bug fix.
+Submit a pull request with a detailed description of changes.
+Ensure your code follows the existing structure and includes debug logs.
+
+Donations
+If you find DpsHelper useful and want to support its development, consider making a donation to keep the project alive and fund new features. Cryptocurrency donations are preferred:
+
+Bitcoin (BTC): bc1qexampleaddress1234567890abcdef1234567890
+Ethereum (ETH): 0xExampleAddress1234567890ABCDEF1234567890
+USDT (ERC-20): 0xExampleAddress1234567890ABCDEF1234567890
+
+Please replace the above addresses with your actual wallet addresses before sharing.
+Your support helps cover development time, testing, and server costs. Thank you for contributing to the WoW community!
+License
+DpsHelper is released under the MIT License. Feel free to use, modify, and distribute the addon, provided you include the license and credit the original author.
+Contact
+For support or feedback:
+
+[GitHub repository link]
+[Discord server link]
+[Other contact method, e.g., email or forum]
+
+
+Happy raiding, and may your DPS soar to the top of the meters!
