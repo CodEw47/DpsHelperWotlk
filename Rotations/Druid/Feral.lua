@@ -1,15 +1,16 @@
--- Rotations\Warrior\Fury.lua
--- Rotation logic for Warrior Fury in WoW 3.3.5.
+-- Rotations\Druid\Feral.lua
+-- Rotation logic for Druid Feral in WoW 3.3.5.
 
 DpsHelper = DpsHelper or {}
 DpsHelper.Rotations = DpsHelper.Rotations or {}
-DpsHelper.Rotations.WARRIOR = DpsHelper.Rotations.WARRIOR or {}
-DpsHelper.Rotations.WARRIOR.Fury = DpsHelper.Rotations.WARRIOR.Fury or {}
+DpsHelper.Rotations.DRUID = DpsHelper.Rotations.DRUID or {}
+DpsHelper.Rotations.DRUID.Feral = DpsHelper.Rotations.DRUID.Feral or {}
 
-function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
+function DpsHelper.Rotations.DRUID.Feral:GetRotationQueue()
     local queue = {}
     local target = UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDeadOrGhost("target")
-    local rage = UnitPower("player", 1)
+    local comboPoints = GetComboPoints("player", "target") or 0
+    local energy = UnitPower("player", 3)
 
     -- Verificar buffs/itens antes da rotação
     local missing = DpsHelper.BuffReminder:GetMissingBuffs()
@@ -24,21 +25,23 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
         DpsHelper.Utils:Print("Added item to queue: " .. item.name)
     end
 
-    -- Rotação de Fury
+    -- Rotação de Feral
     if target and #queue == 0 then
         local spells = {
-            { name = "Battle Shout", id = 6673, condition = function()
-                local remaining = DpsHelper.Utils:GetBuffRemainingTime("player", "Battle Shout")
-                return remaining <= 2 and rage >= 10
+            { name = "Savage Roar", id = 52610, condition = function()
+                local remaining = DpsHelper.Utils:GetBuffRemainingTime("player", "Savage Roar")
+                return comboPoints >= 4 and remaining <= 2 and energy >= 25
             end},
-            { name = "Whirlwind", id = 1680, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Whirlwind") and rage >= 25
+            { name = "Rip", id = 49800, condition = function()
+                local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Rip")
+                return comboPoints >= 4 and remaining <= 2 and energy >= 30
             end},
-            { name = "Bloodthirst", id = 23881, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Bloodthirst") and rage >= 30
+            { name = "Rake", id = 48574, condition = function()
+                local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Rake")
+                return remaining <= 2 and energy >= 35
             end},
-            { name = "Heroic Strike", id = 47450, condition = function()
-                return rage >= 40
+            { name = "Shred", id = 48572, condition = function()
+                return comboPoints < 5 and energy >= 40
             end},
         }
 
@@ -58,4 +61,4 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
     return queue
 end
 
-DpsHelper.Utils:Print("Fury.lua loaded for Warrior")
+DpsHelper.Utils:Print("Feral.lua loaded for Druid")

@@ -1,15 +1,15 @@
--- Rotations\Warrior\Fury.lua
--- Rotation logic for Warrior Fury in WoW 3.3.5.
+-- Rotations\Mage\Frost.lua
+-- Rotation logic for Mage Frost DPS in WoW 3.3.5.
 
 DpsHelper = DpsHelper or {}
 DpsHelper.Rotations = DpsHelper.Rotations or {}
-DpsHelper.Rotations.WARRIOR = DpsHelper.Rotations.WARRIOR or {}
-DpsHelper.Rotations.WARRIOR.Fury = DpsHelper.Rotations.WARRIOR.Fury or {}
+DpsHelper.Rotations.MAGE = DpsHelper.Rotations.MAGE or {}
+DpsHelper.Rotations.MAGE.Frost = DpsHelper.Rotations.MAGE.Frost or {}
 
-function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
+function DpsHelper.Rotations.MAGE.Frost:GetRotationQueue()
     local queue = {}
     local target = UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDeadOrGhost("target")
-    local rage = UnitPower("player", 1)
+    local mana = UnitPower("player", 0) / UnitPowerMax("player", 0)
 
     -- Verificar buffs/itens antes da rotação
     local missing = DpsHelper.BuffReminder:GetMissingBuffs()
@@ -24,21 +24,18 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
         DpsHelper.Utils:Print("Added item to queue: " .. item.name)
     end
 
-    -- Rotação de Fury
+    -- Rotação de Frost
     if target and #queue == 0 then
         local spells = {
-            { name = "Battle Shout", id = 6673, condition = function()
-                local remaining = DpsHelper.Utils:GetBuffRemainingTime("player", "Battle Shout")
-                return remaining <= 2 and rage >= 10
+            { name = "Frostbolt", id = 42842, condition = function()
+                local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Frostbolt")
+                return remaining <= 2 and mana >= 0.16
             end},
-            { name = "Whirlwind", id = 1680, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Whirlwind") and rage >= 25
+            { name = "Deep Freeze", id = 44572, condition = function()
+                return DpsHelper.Utils:GetBuffRemainingTime("player", "Fingers of Frost") > 0 and mana >= 0.09
             end},
-            { name = "Bloodthirst", id = 23881, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Bloodthirst") and rage >= 30
-            end},
-            { name = "Heroic Strike", id = 47450, condition = function()
-                return rage >= 40
+            { name = "Frostbolt", id = 42842, condition = function()
+                return mana >= 0.16
             end},
         }
 
@@ -58,4 +55,4 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
     return queue
 end
 
-DpsHelper.Utils:Print("Fury.lua loaded for Warrior")
+DpsHelper.Utils:Print("Frost.lua loaded for Mage")

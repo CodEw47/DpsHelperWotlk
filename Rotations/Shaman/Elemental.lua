@@ -1,15 +1,15 @@
--- Rotations\Warrior\Fury.lua
--- Rotation logic for Warrior Fury in WoW 3.3.5.
+-- Rotations\Shaman\Elemental.lua
+-- Rotation logic for Shaman Elemental DPS in WoW 3.3.5.
 
 DpsHelper = DpsHelper or {}
 DpsHelper.Rotations = DpsHelper.Rotations or {}
-DpsHelper.Rotations.WARRIOR = DpsHelper.Rotations.WARRIOR or {}
-DpsHelper.Rotations.WARRIOR.Fury = DpsHelper.Rotations.WARRIOR.Fury or {}
+DpsHelper.Rotations.SHAMAN = DpsHelper.Rotations.SHAMAN or {}
+DpsHelper.Rotations.SHAMAN.Elemental = DpsHelper.Rotations.SHAMAN.Elemental or {}
 
-function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
+function DpsHelper.Rotations.SHAMAN.Elemental:GetRotationQueue()
     local queue = {}
     local target = UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDeadOrGhost("target")
-    local rage = UnitPower("player", 1)
+    local mana = UnitPower("player", 0) / UnitPowerMax("player", 0)
 
     -- Verificar buffs/itens antes da rotação
     local missing = DpsHelper.BuffReminder:GetMissingBuffs()
@@ -24,21 +24,18 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
         DpsHelper.Utils:Print("Added item to queue: " .. item.name)
     end
 
-    -- Rotação de Fury
+    -- Rotação de Elemental
     if target and #queue == 0 then
         local spells = {
-            { name = "Battle Shout", id = 6673, condition = function()
-                local remaining = DpsHelper.Utils:GetBuffRemainingTime("player", "Battle Shout")
-                return remaining <= 2 and rage >= 10
+            { name = "Flame Shock", id = 49233, condition = function()
+                local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Flame Shock")
+                return remaining <= 2 and mana >= 0.17
             end},
-            { name = "Whirlwind", id = 1680, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Whirlwind") and rage >= 25
+            { name = "Lava Burst", id = 51505, condition = function()
+                return DpsHelper.SpellManager:IsSpellUsable("Lava Burst") and mana >= 0.1
             end},
-            { name = "Bloodthirst", id = 23881, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Bloodthirst") and rage >= 30
-            end},
-            { name = "Heroic Strike", id = 47450, condition = function()
-                return rage >= 40
+            { name = "Lightning Bolt", id = 49238, condition = function()
+                return mana >= 0.08
             end},
         }
 
@@ -58,4 +55,4 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
     return queue
 end
 
-DpsHelper.Utils:Print("Fury.lua loaded for Warrior")
+DpsHelper.Utils:Print("Elemental.lua loaded for Shaman")

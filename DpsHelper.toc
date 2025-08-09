@@ -1,17 +1,27 @@
 ## Interface: 30300
 ## Title: DpsHelper
-## Notes: A modular DPS assistant for multiple classes with a Guitar Hero-style UI.
-## SavedVariables: DpsHelperDB
+## Notes: DPS rotation helper for WoW 3.3.5
 ## Version: 1.0.0
+## SavedVariables: DpsHelperDB
 
-Core.lua
-Config.lua
 Utils.lua
-SpellManager.lua
+Config.lua
+Core.lua
 TalentManager.lua
+SpellManager.lua
+Events.lua
 UI.lua
 Options.lua
+BuffReminder.lua
+Rotations\DeathKnight\Unholy.lua
+Rotations\Druid\Balance.lua
+Rotations\Druid\Feral.lua
+Rotations\Hunter\Marksmanship.lua
+Rotations\Mage\Fire.lua
+Rotations\Mage\Frost.lua
+Rotations\Paladin\Retribution.lua
 Rotations\Rogue\Combat.lua
-Rotations\Rogue\Assassination.lua
-Rotations\Rogue\Subtlety.lua
+Rotations\Shaman\Elemental.lua
+Rotations\Warlock\Affliction.lua
+Rotations\Warlock\Destruction.lua
 Rotations\Warrior\Fury.lua

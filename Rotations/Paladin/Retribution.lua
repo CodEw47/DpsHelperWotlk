@@ -1,15 +1,15 @@
--- Rotations\Warrior\Fury.lua
--- Rotation logic for Warrior Fury in WoW 3.3.5.
+-- Rotations\Paladin\Retribution.lua
+-- Rotation logic for Paladin Retribution in WoW 3.3.5.
 
 DpsHelper = DpsHelper or {}
 DpsHelper.Rotations = DpsHelper.Rotations or {}
-DpsHelper.Rotations.WARRIOR = DpsHelper.Rotations.WARRIOR or {}
-DpsHelper.Rotations.WARRIOR.Fury = DpsHelper.Rotations.WARRIOR.Fury or {}
+DpsHelper.Rotations.PALADIN = DpsHelper.Rotations.PALADIN or {}
+DpsHelper.Rotations.PALADIN.Retribution = DpsHelper.Rotations.PALADIN.Retribution or {}
 
-function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
+function DpsHelper.Rotations.PALADIN.Retribution:GetRotationQueue()
     local queue = {}
     local target = UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDeadOrGhost("target")
-    local rage = UnitPower("player", 1)
+    local mana = UnitPower("player", 0) / UnitPowerMax("player", 0)
 
     -- Verificar buffs/itens antes da rotação
     local missing = DpsHelper.BuffReminder:GetMissingBuffs()
@@ -24,21 +24,21 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
         DpsHelper.Utils:Print("Added item to queue: " .. item.name)
     end
 
-    -- Rotação de Fury
+    -- Rotação de Retribution
     if target and #queue == 0 then
         local spells = {
-            { name = "Battle Shout", id = 6673, condition = function()
-                local remaining = DpsHelper.Utils:GetBuffRemainingTime("player", "Battle Shout")
-                return remaining <= 2 and rage >= 10
+            { name = "Seal of Vengeance", id = 31801, condition = function()
+                local remaining = DpsHelper.Utils:GetBuffRemainingTime("player", "Seal of Vengeance")
+                return remaining <= 2 and mana >= 0.14
             end},
-            { name = "Whirlwind", id = 1680, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Whirlwind") and rage >= 25
+            { name = "Judgement of Vengeance", id = 31804, condition = function()
+                return DpsHelper.SpellManager:IsSpellUsable("Judgement of Vengeance") and mana >= 0.07
             end},
-            { name = "Bloodthirst", id = 23881, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Bloodthirst") and rage >= 30
+            { name = "Crusader Strike", id = 35395, condition = function()
+                return DpsHelper.SpellManager:IsSpellUsable("Crusader Strike") and mana >= 0.05
             end},
-            { name = "Heroic Strike", id = 47450, condition = function()
-                return rage >= 40
+            { name = "Divine Storm", id = 53385, condition = function()
+                return DpsHelper.SpellManager:IsSpellUsable("Divine Storm") and mana >= 0.12
             end},
         }
 
@@ -58,4 +58,4 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
     return queue
 end
 
-DpsHelper.Utils:Print("Fury.lua loaded for Warrior")
+DpsHelper.Utils:Print("Retribution.lua loaded for Paladin")

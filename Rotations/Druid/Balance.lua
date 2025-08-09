@@ -1,15 +1,15 @@
--- Rotations\Warrior\Fury.lua
--- Rotation logic for Warrior Fury in WoW 3.3.5.
+-- Rotations\Druid\Balance.lua
+-- Rotation logic for Druid Balance in WoW 3.3.5.
 
 DpsHelper = DpsHelper or {}
 DpsHelper.Rotations = DpsHelper.Rotations or {}
-DpsHelper.Rotations.WARRIOR = DpsHelper.Rotations.WARRIOR or {}
-DpsHelper.Rotations.WARRIOR.Fury = DpsHelper.Rotations.WARRIOR.Fury or {}
+DpsHelper.Rotations.DRUID = DpsHelper.Rotations or {}
+DpsHelper.Rotations.DRUID.Balance = DpsHelper.Rotations.DRUID.Balance or {}
 
-function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
+function DpsHelper.Rotations.DRUID.Balance:GetRotationQueue()
     local queue = {}
     local target = UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDeadOrGhost("target")
-    local rage = UnitPower("player", 1)
+    local mana = UnitPower("player", 0) / UnitPowerMax("player", 0)
 
     -- Verificar buffs/itens antes da rotação
     local missing = DpsHelper.BuffReminder:GetMissingBuffs()
@@ -24,21 +24,22 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
         DpsHelper.Utils:Print("Added item to queue: " .. item.name)
     end
 
-    -- Rotação de Fury
+    -- Rotação de Balance
     if target and #queue == 0 then
         local spells = {
-            { name = "Battle Shout", id = 6673, condition = function()
-                local remaining = DpsHelper.Utils:GetBuffRemainingTime("player", "Battle Shout")
-                return remaining <= 2 and rage >= 10
+            { name = "Moonfire", id = 48463, condition = function()
+                local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Moonfire")
+                return remaining <= 2 and mana >= 0.13
             end},
-            { name = "Whirlwind", id = 1680, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Whirlwind") and rage >= 25
+            { name = "Insect Swarm", id = 48468, condition = function()
+                local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Insect Swarm")
+                return remaining <= 2 and mana >= 0.08
             end},
-            { name = "Bloodthirst", id = 23881, condition = function()
-                return DpsHelper.SpellManager:IsSpellUsable("Bloodthirst") and rage >= 30
+            { name = "Starfire", id = 48465, condition = function()
+                return DpsHelper.Utils:GetBuffRemainingTime("player", "Eclipse (Solar)") > 0 and mana >= 0.32
             end},
-            { name = "Heroic Strike", id = 47450, condition = function()
-                return rage >= 40
+            { name = "Wrath", id = 48461, condition = function()
+                return mana >= 0.18
             end},
         }
 
@@ -58,4 +59,4 @@ function DpsHelper.Rotations.WARRIOR.Fury:GetRotationQueue()
     return queue
 end
 
-DpsHelper.Utils:Print("Fury.lua loaded for Warrior")
+DpsHelper.Utils:Print("Balance.lua loaded for Druid")
