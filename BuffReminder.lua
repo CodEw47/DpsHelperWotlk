@@ -3,36 +3,47 @@
 
 DpsHelper = DpsHelper or {}
 DpsHelper.BuffReminder = DpsHelper.BuffReminder or {}
+DpsHelper.SpellManager.PoisonCache = {}
+
+local enchantTooltip = CreateFrame("GameTooltip", "DpsHelperEnchantTooltip", UIParent, "GameTooltipTemplate")
 
 -- Função para verificar se um veneno está aplicado nas armas
 function DpsHelper.SpellManager:IsPoisonApplied(poisonName)
-    local hasMainHandEnchant, mainHandExpiration, _, hasOffHandEnchant, offHandExpiration = GetWeaponEnchantInfo()
-    local poisonApplied = false
+    if self.PoisonCache[poisonName] ~= nil then return self.PoisonCache[poisonName] end
+    local hasMainHandEnchant, mainHandExpiration, _, _, hasOffHandEnchant, offHandExpiration = GetWeaponEnchantInfo()
+    local isApplied = false
 
-    -- Verificar arma principal (slot 16)
-    if hasMainHandEnchant then
-        local mainHandLink = GetInventoryItemLink("player", 16)
-        if mainHandLink then
-            local mainHandName = GetItemInfo(mainHandLink) or ""
-            if mainHandName:find(poisonName) or (poisonName == "Instant Poison IX" and mainHandName:find("Instant Poison")) or (poisonName == "Deadly Poison IX" and mainHandName:find("Deadly Poison")) then
-                poisonApplied = true
+    if hasMainHandEnchant and mainHandExpiration > 0 then
+        enchantTooltip:ClearLines()
+        enchantTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+        enchantTooltip:SetInventoryItem("player", 16)
+        for i = 1, enchantTooltip:NumLines() do
+            local lineText = _G["DpsHelperEnchantTooltipTextLeft" .. i]:GetText()
+            if lineText and string.find(lineText, poisonName) then
+                isApplied = true
+                break
             end
         end
     end
 
-    -- Verificar arma secundária (slot 17)
-    if hasOffHandEnchant then
-        local offHandLink = GetInventoryItemLink("player", 17)
-        if offHandLink then
-            local offHandName = GetItemInfo(offHandLink) or ""
-            if offHandName:find(poisonName) or (poisonName == "Instant Poison IX" and offHandName:find("Instant Poison")) or (poisonName == "Deadly Poison IX" and offHandName:find("Deadly Poison")) then
-                poisonApplied = true
+    if hasOffHandEnchant and offHandExpiration > 0 then
+        enchantTooltip:ClearLines()
+        enchantTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+        enchantTooltip:SetInventoryItem("player", 17)
+        for i = 1, enchantTooltip:NumLines() do
+            local lineText = _G["DpsHelperEnchantTooltipTextLeft" .. i]:GetText()
+            if lineText and string.find(lineText, poisonName) then
+                isApplied = true
+                break
             end
         end
     end
 
-    DpsHelper.Utils:Print("Checking poison: " .. poisonName .. " - Applied: " .. tostring(poisonApplied))
-    return poisonApplied
+    if DpsHelper.Config:Get("enableDebug") then
+        DpsHelper.Utils:Print("Checking poison: " .. poisonName .. " - Applied: " .. tostring(isApplied))
+    end
+    self.PoisonCache[poisonName] = isApplied
+    return isApplied
 end
 
 local classBuffs = {
@@ -174,7 +185,6 @@ function DpsHelper.BuffReminder:GetMissingBuffs()
     local buffs = classBuffs[playerClass] and classBuffs[playerClass][playerSpec] or { buffs = {}, items = {}, pet = nil }
     local missing = { buffs = {}, items = {}, pet = nil }
 
-    -- Verificar buffs
     for _, buff in ipairs(buffs.buffs or {}) do
         local remaining = DpsHelper.Utils:GetBuffRemainingTime("player", buff.name)
         if remaining == 0 and buff.condition() then
@@ -183,7 +193,6 @@ function DpsHelper.BuffReminder:GetMissingBuffs()
         end
     end
 
-    -- Verificar itens
     for _, item in ipairs(buffs.items or {}) do
         local buffName = GetItemInfo(item.id) or item.name
         local remaining = buffName and DpsHelper.Utils:GetBuffRemainingTime("player", buffName) or 0
@@ -193,13 +202,37 @@ function DpsHelper.BuffReminder:GetMissingBuffs()
         end
     end
 
-    -- Verificar pet
     if buffs.pet and buffs.pet.condition() then
         missing.pet = { action = buffs.pet.action, id = buffs.pet.id }
         DpsHelper.Utils:Print("Missing pet: " .. (buffs.pet.action or "Unknown"))
     end
 
     return missing
+end
+
+function DpsHelper.BuffReminder:GetRotationPrequesites()
+    local queue = {}
+    local missing = DpsHelper.BuffReminder:GetMissingBuffs()
+
+    for _, buff in ipairs(missing.buffs) do
+        if DpsHelper.SpellManager:IsSpellUsable(buff.name) then
+            table.insert(queue, { name = buff.name, spellID = buff.id, type = "buff", priority = 0 })
+            DpsHelper.Utils:Print("Added buff to queue: " .. buff.name)
+            return queue -- Retorna imediatamente se houver buff ausente
+        end
+    end
+    for _, item in ipairs(missing.items) do
+        table.insert(queue, { name = item.name, spellID = item.id, type = "item", priority = 0 })
+        DpsHelper.Utils:Print("Added item to queue: " .. item.name)
+        return queue -- Retorna imediatamente se houver item ausente
+    end
+    if missing.pet then
+        table.insert(queue, { name = missing.pet.action, spellID = missing.pet.id, type = "pet", priority = 0 })
+        DpsHelper.Utils:Print("Added pet summon to queue: " .. (missing.pet.action or "Unknown"))
+        return queue -- Retorna imediatamente se pet estiver ausente
+    end
+
+    return queue
 end
 
 function DpsHelper.BuffReminder:Initialize()

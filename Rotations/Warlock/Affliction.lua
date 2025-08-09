@@ -10,60 +10,70 @@ function DpsHelper.Rotations.WARLOCK.Affliction:GetRotationQueue()
     local queue = {}
     local target = UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDeadOrGhost("target")
 
-    -- Verificar buffs/itens/pets antes da rotação
-    local missing = DpsHelper.BuffReminder:GetMissingBuffs()
-    for _, buff in ipairs(missing.buffs) do
-        if DpsHelper.SpellManager:IsSpellUsable(buff.name) then
-            table.insert(queue, { name = buff.name, spellID = buff.id, type = "buff" })
-            DpsHelper.Utils:Print("Added buff to queue: " .. buff.name)
-        end
-    end
-    for _, item in ipairs(missing.items) do
-        table.insert(queue, { name = item.name, spellID = item.id, type = "item" })
-        DpsHelper.Utils:Print("Added item to queue: " .. item.name)
-    end
-    if missing.pet then
-        table.insert(queue, { name = missing.pet.action, spellID = missing.pet.id, type = "pet" })
-        DpsHelper.Utils:Print("Added pet summon to queue: " .. (missing.pet.action or "Unknown"))
+    -- Verificar pré-requisitos (buffs, itens, pets)
+    local prereqs = DpsHelper.BuffReminder:GetRotationPrequesites()
+    if #prereqs > 0 then
+        return prereqs -- Retorna imediatamente se houver pré-requisitos ausentes
     end
 
-    -- Adicionar rotação apenas se houver um alvo válido e buffs/itens/pets estiverem ok
-    if target and #queue == 0 then
+    -- Adicionar até três habilidades da rotação se houver um alvo válido
+    if target then
         local spells = {
             { name = "Haunt", id = 48181, condition = function()
                 local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Haunt")
                 return remaining <= 2 and remaining >= 0
-            end},
+            end, priority = 1},
             { name = "Unstable Affliction", id = 30108, condition = function()
                 local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Unstable Affliction")
                 return remaining <= 2 and remaining >= 0
-            end},
+            end, priority = 2},
             { name = "Corruption", id = 172, condition = function()
                 local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Corruption")
                 return remaining <= 2 and remaining >= 0
-            end},
+            end, priority = 3},
             { name = "Curse of Agony", id = 980, condition = function()
                 local agonyRemaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Curse of Agony")
                 local doomRemaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Curse of Doom")
                 return agonyRemaining <= 2 and agonyRemaining >= 0 and doomRemaining == 0
-            end},
+            end, priority = 4},
             { name = "Curse of Doom", id = 603, condition = function()
                 local remaining = DpsHelper.Utils:GetDebuffRemainingTime("target", "Curse of Doom")
                 return UnitHealth("target") > UnitHealthMax("player") * 3 and remaining <= 2 and remaining >= 0
-            end},
+            end, priority = 5},
             { name = "Drain Life", id = 689, condition = function()
                 return UnitHealth("player") / UnitHealthMax("player") < 0.7
-            end},
+            end, priority = 6},
             { name = "Shadow Bolt", id = 686, condition = function()
                 return true -- Filler spell
-            end}
+            end, priority = 7}
         }
 
+        -- Criar uma lista de habilidades válidas
+        local validSpells = {}
         for _, spell in ipairs(spells) do
             if DpsHelper.SpellManager:IsSpellUsable(spell.name) and spell.condition() then
-                table.insert(queue, { name = spell.name, spellID = spell.id, type = "spell" })
-                DpsHelper.Utils:Print("Added " .. spell.name .. " to rotation queue")
+                table.insert(validSpells, spell)
             end
+        end
+
+        -- Ordenar por prioridade, mas mover DoTs prestes a expirar para o topo
+        table.sort(validSpells, function(a, b)
+            local aRemaining = a.condition() and DpsHelper.Utils:GetDebuffRemainingTime("target", a.name) or 999
+            local bRemaining = b.condition() and DpsHelper.Utils:GetDebuffRemainingTime("target", b.name) or 999
+            if aRemaining <= 2 and bRemaining > 2 then
+                return true
+            elseif bRemaining <= 2 and aRemaining > 2 then
+                return false
+            else
+                return a.priority < b.priority
+            end
+        end)
+
+        -- Adicionar até três habilidades à fila
+        for i = 1, math.min(3, #validSpells) do
+            local spell = validSpells[i]
+            table.insert(queue, { name = spell.name, spellID = spell.id, type = "spell", priority = spell.priority })
+            DpsHelper.Utils:Print("Added to queue: " .. spell.name .. " (priority " .. spell.priority .. ")")
         end
     end
 

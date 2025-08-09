@@ -42,15 +42,22 @@ local function TryDetectSpecWithRetry()
         attempts = attempts + 1
         elapsed = 0
         local tabCount = GetNumTalentTabs() or 0
-        DpsHelper.Utils:Print("Attempt " .. attempts .. ": GetNumTalentTabs returned " .. tabCount)
+        if DpsHelper.Config:Get("enableDebug") then
+            DpsHelper.Utils:Print("Attempt " .. attempts .. ": GetNumTalentTabs returned " .. tabCount)
+        end
         if tabCount > 0 then
-            DpsHelper.SpellManager:ScanSpellbook()
             DpsHelper.TalentManager:DetectSpec()
+            DpsHelper.SpellManager.scanned = false  -- Força rescan do spellbook
+            DpsHelper.SpellManager:ScanSpellbook()
             DpsHelper.UI:Update()
-            DpsHelper.Utils:Print("Specialization detection successful on attempt " .. attempts)
+            if DpsHelper.Config:Get("enableDebug") then
+                DpsHelper.Utils:Print("Specialization detection successful on attempt " .. attempts)
+            end
             retryFrame:Hide()
         elseif attempts >= maxAttempts then
-            DpsHelper.Utils:Print("Failed to detect specialization after " .. maxAttempts .. " attempts")
+            if DpsHelper.Config:Get("enableDebug") then
+                DpsHelper.Utils:Print("Failed to detect specialization after " .. maxAttempts .. " attempts")
+            end
             DpsHelper.Config:Set("currentSpec", "unknown")
             DpsHelper.Config:Set("currentClass", select(2, UnitClass("player")):lower())
             retryFrame:Hide()
@@ -61,40 +68,62 @@ end
 
 eventFrame:SetScript("OnEvent", function(self, event, arg1, arg2)
     if event == "ADDON_LOADED" and arg1 == "DpsHelper" then
-        DpsHelper.Utils:Print("Addon loaded, initializing...")
+        if DpsHelper.Config:Get("enableDebug") then
+            DpsHelper.Utils:Print("Addon loaded, initializing...")
+        end
         DpsHelper:Initialize()
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
-        DpsHelper.Utils:Print("Player login/entering world, initializing detection...")
+        if DpsHelper.Config:Get("enableDebug") then
+            DpsHelper.Utils:Print("Player login/entering world, initializing detection...")
+        end
+        -- Limpa currentClass e currentSpec do cache
+        DpsHelper.Config:Set("currentClass", nil)
+        DpsHelper.Config:Set("currentSpec", nil)
+        -- Reseta flags de cache para forçar novos scans
+        DpsHelper.SpellManager.scanned = false
+        DpsHelper.SpellManager.scannedInventory = false
+        DpsHelper.SpellManager.PoisonCache = {}
         if not DpsHelper.isInitialized then
             DpsHelper:Initialize()
         end
         TryDetectSpecWithRetry()
         DpsHelper.UI:Show()
     elseif event == "PLAYER_TALENT_UPDATE" or event == "LEARNED_SPELL_IN_TAB" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
-        DpsHelper.Utils:Print("Talent or spell update detected, refreshing...")
-        DpsHelper.SpellManager:ScanSpellbook()
+        if DpsHelper.Config:Get("enableDebug") then
+            DpsHelper.Utils:Print("Talent or spell update detected, refreshing...")
+        end
+        DpsHelper.SpellManager.scanned = false  -- Força rescan do spellbook
         DpsHelper.TalentManager:DetectSpec()
+        DpsHelper.SpellManager:ScanSpellbook()
         DpsHelper.UI:Update()
     elseif event == "UNIT_AURA" and (arg1 == "player" or arg1 == "target") then
         DpsHelper.Utils:UpdateAuraCache(arg1)
         DpsHelper.UI:Update()
     elseif event == "UNIT_PET" and arg1 == "player" then
-        DpsHelper.Utils:Print("Pet status changed, updating UI")
+        if DpsHelper.Config:Get("enableDebug") then
+            DpsHelper.Utils:Print("Pet status changed, updating UI")
+        end
         DpsHelper.UI:Update()
     elseif event == "UNIT_COMBO_POINTS" and arg1 == "player" or event == "UNIT_POWER_UPDATE" and arg1 == "player" or
-           event == "PLAYER_TARGET_CHANGED" or event == "BAG_UPDATE" or event == "SPELL_UPDATE_COOLDOWN" then
+           event == "PLAYER_TARGET_CHANGED" or event == "SPELL_UPDATE_COOLDOWN" then
         DpsHelper.UI:Update()
-    elseif event == "UNIT_INVENTORY_CHANGED" and arg1 == "player" then
-        DpsHelper.SpellManager:UpdateCache()
+    elseif event == "UNIT_INVENTORY_CHANGED" and arg1 == "player" or event == "BAG_UPDATE" then
+        DpsHelper.SpellManager.scannedInventory = false  -- Força rescan do inventário
+        DpsHelper.SpellManager.PoisonCache = {}  -- Invalida cache de poisons
+        DpsHelper.SpellManager:ScanInventory()
         DpsHelper.UI:Update()
     elseif event == "PLAYER_REGEN_ENABLED" then
-        DpsHelper.Utils:Print("Combat ended, resetting combat timer")
+        if DpsHelper.Config:Get("enableDebug") then
+            DpsHelper.Utils:Print("Combat ended, resetting combat timer")
+        end
         DpsHelper.Utils.combatStartTime = nil
         DpsHelper.Utils.RecentSpells = {}
         DpsHelper.UI:Update()
     elseif event == "PLAYER_REGEN_DISABLED" then
-        DpsHelper.Utils:Print("Combat started, setting combat timer")
+        if DpsHelper.Config:Get("enableDebug") then
+            DpsHelper.Utils:Print("Combat started, setting combat timer")
+        end
         DpsHelper.Utils.combatStartTime = GetTime()
         DpsHelper.UI:Update()
     end

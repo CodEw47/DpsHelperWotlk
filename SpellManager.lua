@@ -4,7 +4,9 @@
 DpsHelper = DpsHelper or {}
 DpsHelper.SpellManager = DpsHelper.SpellManager or {}
 DpsHelper.SpellManager.Cache = DpsHelper.SpellManager.Cache or {}
-
+DpsHelper.SpellManager.PoisonCache = DpsHelper.SpellManager.PoisonCache or {}
+DpsHelper.SpellManager.scanned = false  -- Flag para evitar rescans de spellbook
+DpsHelper.SpellManager.scannedInventory = false  -- Flag para evitar rescans de 
 local talentSpells = {
     ROGUE = { ["Blade Flurry"] = 13877, ["Adrenaline Rush"] = 13750, ["Killing Spree"] = 51690, ["Shadow Dance"] = 51713, ["Preparation"] = 14185, ["Shadowstep"] = 36554 },
     MAGE = { ["Arcane Power"] = 12042, ["Icy Veins"] = 12472 },
@@ -15,7 +17,20 @@ local talentSpells = {
 }
 
 local spellNames = {
-    ROGUE = { "Sinister Strike", "Eviscerate", "Rupture", "Slice and Dice", "Fan of Knives", "Mutilate", "Envenom", "Hunger for Blood", "Backstab", "Hemorrhage", "Ambush", "Garrote" },
+    ROGUE = {
+        { name = "Sinister Strike", id = 48638 },
+        { name = "Eviscerate", id = 48668 },
+        { name = "Rupture", id = 48672 },
+        { name = "Slice and Dice", id = 5171 },
+        { name = "Fan of Knives", id = 51723 },
+        { name = "Mutilate", id = 1329 },
+        { name = "Envenom", id = 32645 },
+        { name = "Hunger for Blood", id = 51662 },
+        { name = "Backstab", id = 53 },
+        { name = "Hemorrhage", id = 16511 },
+        { name = "Ambush", id = 8676 },
+        { name = "Garrote", id = 48676 }
+    },
     WARRIOR = { "Heroic Strike", "Cleave", "Slam", "Rend", "Mortal Strike", "Overpower", "Execute", "Bloodthirst", "Whirlwind", "Shield Slam", "Devastate", "Revenge", "Shield Block", "Battle Shout", "Commanding Shout", "Berserker Rage", "Recklessness" },
     PALADIN = { "Crusader Strike", "Divine Storm", "Hammer of the Righteous", "Judgement of Light", "Judgement of Wisdom", "Seal of Command", "Seal of Righteousness", "Seal of Vengeance", "Holy Shock", "Flash of Light", "Holy Light", "Consecration", "Avenging Wrath", "Divine Plea", "Hammer of Wrath" },
     HUNTER = { "Aimed Shot", "Arcane Shot", "Steady Shot", "Multi-Shot", "Serpent Sting", "Chimera Shot", "Explosive Shot", "Kill Shot", "Aspect of the Hawk", "Aspect of the Viper", "Rapid Fire", "Hunter's Mark", "Volley" },
@@ -64,61 +79,66 @@ function DpsHelper.SpellManager:InitializeTalentCache()
         if type(spellID) == "number" and spellID > 0 then
             if IsSpellKnown(spellID) then
                 self.Cache[name] = { id = spellID, type = "spell", buffName = nil }
-            else
+            elseif DpsHelper.Config:Get("enableDebug") then
                 DpsHelper.Utils:Print("Talent spell not known: " .. name .. " (ID: " .. spellID .. ")")
             end
-        else
+        elseif DpsHelper.Config:Get("enableDebug") then
             DpsHelper.Utils:Print("Invalid spellID for talent spell: " .. name .. " (ID: " .. tostring(spellID) .. ")")
         end
     end
 end
 
 function DpsHelper.SpellManager:ScanSpellbook()
+    if self.scanned then return end
     local playerClass = select(2, UnitClass("player")):upper()
+    local playerSpec = DpsHelper.Config:Get("currentSpec"):gsub("^%l", string.upper)
+    local specSpells = spellNames[playerClass][playerSpec] or spellNames[playerClass] or {}
     self.Cache = self.Cache or {}
-    for _, spellData in ipairs(spellNames[playerClass] or {}) do
-        local name, spellID
-        if type(spellData) == "table" and spellData.name and spellData.id then
-            name = spellData.name
-            spellID = spellData.id
-        else
-            name = spellData
-        end
-        if type(name) == "string" and name ~= "" then
-            local spellName, _, retrievedSpellID = GetSpellInfo(spellID or name)
-            spellID = spellID or retrievedSpellID
-            if spellName and type(spellID) == "number" and spellID > 0 then
-                if IsSpellKnown(spellID) then
-                    self.Cache[spellName] = { id = spellID, type = "spell", buffName = nil }
-                    DpsHelper.Utils:Print("Spell cached: " .. spellName .. " (ID: " .. spellID .. ")")
-                else
-                    DpsHelper.Utils:Print("Spell not known: " .. spellName .. " (ID: " .. spellID .. ")")
+    for _, spellData in ipairs(specSpells) do
+        local name = spellData.name
+        local spellID = spellData.id
+        if name and spellID > 0 then
+            if IsSpellKnown(spellID) then
+                self.Cache[name] = { id = spellID, type = "spell" }
+                if DpsHelper.Config:Get("enableDebug") then
+                    DpsHelper.Utils:Print("Spell cached: " .. name .. " (ID: " .. spellID .. ")")
                 end
-            else
-                DpsHelper.Utils:Print("Invalid spell name or ID: " .. name .. " (SpellID: " .. tostring(spellID) .. ")")
+            elseif DpsHelper.Config:Get("enableDebug") then
+                DpsHelper.Utils:Print("Spell not known: " .. name .. " (ID: " .. spellID .. ")")
             end
-        else
-            DpsHelper.Utils:Print("Invalid spell name in spellNames: " .. tostring(name))
         end
     end
     self:InitializeTalentCache()
-    DpsHelper.Utils:Print("Spellbook scanned for " .. playerClass)
+    self.scanned = true
+    if DpsHelper.Config:Get("enableDebug") then
+        DpsHelper.Utils:Print("Spellbook scanned for " .. playerClass .. " (" .. playerSpec .. ")")
+    end
 end
 
 function DpsHelper.SpellManager:ScanInventory()
+    if self.scannedInventory then return end  -- Evita rescans desnecessários
     local playerClass = select(2, UnitClass("player")):upper()
     for name, data in pairs(itemNames[playerClass] or {}) do
         if GetItemCount(data.itemID) > 0 then
             self.Cache[name] = { id = data.itemID, type = "item", buffName = data.buffName, spellID = data.spellID }
+            if DpsHelper.Config:Get("enableDebug") then
+                DpsHelper.Utils:Print("Item cached: " .. name .. " (ID: " .. data.itemID .. ")")
+            end
         end
     end
     for name, data in pairs(itemNames.ALL or {}) do
         local trinket1, trinket2 = GetInventoryItemID("player", 13), GetInventoryItemID("player", 14)
         if trinket1 == data.itemID or trinket2 == data.itemID then
             self.Cache[name] = { id = data.itemID, type = "item", buffName = data.buffName, spellID = data.spellID }
+            if DpsHelper.Config:Get("enableDebug") then
+                DpsHelper.Utils:Print("Trinket cached: " .. name .. " (ID: " .. data.itemID .. ")")
+            end
         end
     end
-    DpsHelper.Utils:Print("Inventory scanned")
+    self.scannedInventory = true
+    if DpsHelper.Config:Get("enableDebug") then
+        DpsHelper.Utils:Print("Inventory scanned")
+    end
 end
 
 function DpsHelper.SpellManager:UpdateCache()
@@ -127,16 +147,37 @@ function DpsHelper.SpellManager:UpdateCache()
 end
 
 function DpsHelper.SpellManager:IsPoisonApplied(poisonName)
+    if self.PoisonCache[poisonName] ~= nil then return self.PoisonCache[poisonName] end
+    local enchantTooltip = CreateFrame("GameTooltip", "DpsHelperEnchantTooltip", UIParent, "GameTooltipTemplate")
     local hasMainHandEnchant, mainHandExpiration, _, _, hasOffHandEnchant, offHandExpiration = GetWeaponEnchantInfo()
-    local mainHandWeapon, offHandWeapon = GetInventoryItemID("player", 16), GetInventoryItemID("player", 17)
-    local isApplied = true
-    if mainHandWeapon and (not hasMainHandEnchant or mainHandExpiration <= 0) then
-        isApplied = false
-        DpsHelper.Utils:Print("Poison " .. poisonName .. " missing on main hand")
+    local isApplied = false
+    if hasMainHandEnchant and mainHandExpiration > 0 then
+        enchantTooltip:ClearLines()
+        enchantTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+        enchantTooltip:SetInventoryItem("player", 16)
+        for i = 1, enchantTooltip:NumLines() do
+            local lineText = _G["DpsHelperEnchantTooltipTextLeft" .. i]:GetText()
+            if lineText and string.find(lineText, poisonName) then
+                isApplied = true
+                break
+            end
+        end
     end
-    if offHandWeapon and (not hasOffHandEnchant or offHandExpiration <= 0) then
-        isApplied = false
-        DpsHelper.Utils:Print("Poison " .. poisonName .. " missing on off hand")
+    if hasOffHandEnchant and offHandExpiration > 0 then
+        enchantTooltip:ClearLines()
+        enchantTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+        enchantTooltip:SetInventoryItem("player", 17)
+        for i = 1, enchantTooltip:NumLines() do
+            local lineText = _G["DpsHelperEnchantTooltipTextLeft" .. i]:GetText()
+            if lineText and string.find(lineText, poisonName) then
+                isApplied = true
+                break
+            end
+        end
+    end
+    self.PoisonCache[poisonName] = isApplied
+    if DpsHelper.Config:Get("enableDebug") then
+        DpsHelper.Utils:Print("Checking poison: " .. poisonName .. " - Applied: " .. tostring(isApplied))
     end
     return isApplied
 end
@@ -170,7 +211,7 @@ function DpsHelper.SpellManager:IsSpellUsable(name)
         local playerClass = select(2, UnitClass("player")):upper()
         if itemNames.ALL and itemNames.ALL[name] and itemNames.ALL[name].spellID then
             local trinket1, trinket2 = GetInventoryItemID("player", 13), GetInventoryItemID("player", 14)
-            isEquipped = trinket1 == entry.id or trinket2 == entry.id
+            isEquipped = trinket1 == entry.id or trinket2 == data.itemID
         end
         local hasWeapon = itemNames[playerClass] and itemNames[playerClass][name] and (GetInventoryItemID("player", 16) or GetInventoryItemID("player", 17))
         if hasWeapon and self:IsPoisonApplied(name) then

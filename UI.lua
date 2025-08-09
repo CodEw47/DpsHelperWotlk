@@ -2,10 +2,10 @@
 -- Manages the unified, compact, and professional UI for DpsHelper.
 
 DpsHelper.UI = {}
-local mainFrame, actionFrames, buffFrames = nil, {}, {}
+local mainFrame, actionFrames = nil, {}
 local isLocked = false
-local FRAME_WIDTH, FRAME_HEIGHT = 240, 260
-local ICON_SIZE, ICON_SPACING = 32, 3
+local FRAME_WIDTH, FRAME_HEIGHT = 200, 150
+local ICON_SIZE, ICON_SPACING = 25, 5
 local lastRotationError = nil
 
 function DpsHelper.UI:Initialize()
@@ -41,82 +41,21 @@ function DpsHelper.UI:Initialize()
     title:SetShadowColor(0, 0, 0, 0.8)
     mainFrame.title = title
 
-    -- Título da seção de buffs
-    local buffHeader = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    buffHeader:SetPoint("TOP", mainFrame, "TOP", 0, -30)
-    buffHeader:SetText("Buff/Item Check")
-    buffHeader:SetTextColor(0.9, 0.9, 0.9, 1)
-    buffHeader:SetShadowOffset(1, -1)
-
-    -- Frames de buffs/itens/pets
-    buffFrames = {}
-    for i = 1, 3 do
-        local buffFrame = CreateFrame("Frame", "DpsHelperBuff" .. i, mainFrame)
-        buffFrame:SetSize(ICON_SIZE, ICON_SIZE + 16)
-        local totalIconsWidth = (3 * ICON_SIZE) + (2 * ICON_SPACING)
-        local startX = -(totalIconsWidth / 2) + (ICON_SIZE / 2)
-        buffFrame:SetPoint("CENTER", mainFrame, "CENTER", startX + (i - 1) * (ICON_SIZE + ICON_SPACING), 20)
-
-        local icon = buffFrame:CreateTexture(nil, "ARTWORK")
-        icon:SetSize(ICON_SIZE, ICON_SIZE)
-        icon:SetPoint("TOP", buffFrame, "TOP", 0, -2)
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        buffFrame.icon = icon
-
-        local highlight = buffFrame:CreateTexture(nil, "BORDER")
-        highlight:SetSize(ICON_SIZE + 4, ICON_SIZE + 4)
-        highlight:SetPoint("CENTER", icon, "CENTER")
-        highlight:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
-        highlight:SetVertexColor(1, 0.8, 0.2, 0.9)
-        highlight:SetBlendMode("ADD")
-        highlight:Hide()
-        buffFrame.highlight = highlight
-
-        local nameText = buffFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        nameText:SetPoint("BOTTOM", buffFrame, "BOTTOM", 0, 2)
-        nameText:SetTextColor(1, 1, 1, 1)
-        nameText:SetShadowOffset(1, -1)
-        buffFrame.nameText = nameText
-
-        buffFrame:SetScript("OnEnter", function(self)
-            if self.name then
-                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                if self.type == "item" then
-                    GameTooltip:SetItemByID(self.id)
-                else
-                    GameTooltip:SetSpellByID(self.id)
-                end
-                GameTooltip:Show()
-            end
-        end)
-        buffFrame:SetScript("OnLeave", GameTooltip_Hide)
-
-        buffFrame:SetScript("OnUpdate", function(self)
-            if self.name and DpsHelper.SpellManager:IsSpellUsable(self.name) then
-                self.highlight:Show()
-            else
-                self.highlight:Hide()
-            end
-        end)
-
-        buffFrames[i] = buffFrame
-    end
-
     -- Título da seção de rotação
     local rotationHeader = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    rotationHeader:SetPoint("TOP", mainFrame, "TOP", 0, -70)
-    rotationHeader:SetText("Primary Rotation")
+    rotationHeader:SetPoint("TOP", mainFrame, "TOP", 0, -40)
+    rotationHeader:SetText("Rotation Queue")
     rotationHeader:SetTextColor(0.9, 0.9, 0.9, 1)
     rotationHeader:SetShadowOffset(1, -1)
 
-    -- Frames de rotação
+    -- Frames de rotação (até 3)
     actionFrames = {}
-    for i = 1, 4 do
+    for i = 1, 3 do
         local actionFrame = CreateFrame("Frame", "DpsHelperAction" .. i, mainFrame)
         actionFrame:SetSize(ICON_SIZE, ICON_SIZE + 16)
-        local totalIconsWidth = (4 * ICON_SIZE) + (3 * ICON_SPACING)
+        local totalIconsWidth = (3 * ICON_SIZE) + (2 * ICON_SPACING)
         local startX = -(totalIconsWidth / 2) + (ICON_SIZE / 2)
-        actionFrame:SetPoint("CENTER", mainFrame, "CENTER", startX + (i - 1) * (ICON_SIZE + ICON_SPACING), -80)
+        actionFrame:SetPoint("CENTER", mainFrame, "CENTER", startX + (i - 1) * (ICON_SIZE + ICON_SPACING), -20)
 
         local icon = actionFrame:CreateTexture(nil, "ARTWORK")
         icon:SetSize(ICON_SIZE, ICON_SIZE)
@@ -141,16 +80,14 @@ function DpsHelper.UI:Initialize()
         durationBar:Hide()
         actionFrame.durationBar = durationBar
 
-        local spellText = actionFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        spellText:SetPoint("BOTTOM", actionFrame, "BOTTOM", 0, 2)
-        spellText:SetTextColor(1, 1, 1, 1)
-        spellText:SetShadowOffset(1, -1)
-        actionFrame.spellText = spellText
-
         actionFrame:SetScript("OnEnter", function(self)
-            if self.spellName then
+            if self.spellName and self.spellID then
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                GameTooltip:SetSpellByID(self.spellID)
+                if self.type == "item" then
+                    GameTooltip:SetItemByID(self.spellID)
+                else
+                    GameTooltip:SetSpellByID(self.spellID)
+                end
                 GameTooltip:Show()
             end
         end)
@@ -200,58 +137,13 @@ function DpsHelper.UI:Update()
     local specName = spec ~= "unknown" and spec or "Unknown"
     mainFrame.title:SetText(className .. " - " .. specName)
 
-    -- Atualizar buffs/itens/pets
-    local missing = DpsHelper.BuffReminder:GetMissingBuffs()
-    local buffQueue = {}
-    for _, buff in ipairs(missing.buffs) do
-        table.insert(buffQueue, { name = buff.name, id = buff.id, type = "buff" })
-    end
-    for _, item in ipairs(missing.items) do
-        table.insert(buffQueue, { name = item.name, id = item.id, type = "item" })
-    end
-    if missing.pet then
-        table.insert(buffQueue, { name = missing.pet, id = 688, type = "pet" })
-    end
-
-    for i = 1, 3 do
-        local buffFrame = buffFrames[i]
-        local buffItem = buffQueue[i]
-        if buffItem then
-            local icon
-            if buffItem.type == "item" then
-                _, _, _, _, _, _, _, _, _, icon = GetItemInfo(buffItem.id)
-            else
-                _, _, icon = GetSpellInfo(buffItem.id)
-            end
-            if buffItem.name and buffItem.id and icon then
-                buffFrame:Show()
-                buffFrame.icon:SetTexture(icon)
-                buffFrame.name = buffItem.name
-                buffFrame.id = buffItem.id
-                buffFrame.type = buffItem.type
-                buffFrame.nameText:SetText(i == 1 and buffItem.name or "")
-                if i == 1 then
-                    buffFrame.nameText:Show()
-                else
-                    buffFrame.nameText:Hide()
-                end
-                buffFrame:SetAlpha(1.0 - (i - 1) * 0.15)
-            else
-                buffFrame:Hide()
-                DpsHelper.Utils:Print("Invalid buff/item data: " .. (buffItem.name or "nil"))
-            end
-        else
-            buffFrame:Hide()
-        end
-    end
-
-    -- Atualizar rotação primária
+    -- Atualizar rotação
     if class == "UNKNOWN" or spec == "UNKNOWN" then
         if lastRotationError ~= "class_spec_unknown" then
             DpsHelper.Utils:Print("Class or spec unknown, skipping rotation update")
             lastRotationError = "class_spec_unknown"
         end
-        for i = 1, 4 do
+        for i = 1, 3 do
             actionFrames[i]:Hide()
         end
         return
@@ -263,7 +155,7 @@ function DpsHelper.UI:Update()
             DpsHelper.Utils:Print("Rotation not found for class=" .. class .. ", spec=" .. spec)
             lastRotationError = class .. "_" .. spec
         end
-        for i = 1, 4 do
+        for i = 1, 3 do
             actionFrames[i]:Hide()
         end
         return
@@ -273,13 +165,13 @@ function DpsHelper.UI:Update()
     local queue = rotation.GetRotationQueue() or {}
     if #queue == 0 then
         DpsHelper.Utils:Print("Empty rotation queue for class=" .. class .. ", spec=" .. spec)
-        for i = 1, 4 do
+        for i = 1, 3 do
             actionFrames[i]:Hide()
         end
         return
     end
 
-    for i = 1, 4 do
+    for i = 1, 3 do
         local actionFrame = actionFrames[i]
         local queueItem = queue[i]
         if queueItem then
@@ -296,6 +188,7 @@ function DpsHelper.UI:Update()
                 actionFrame.icon:SetTexture(spellIcon)
                 actionFrame.spellID = queueItem.spellID
                 actionFrame.spellName = spellName
+                actionFrame.type = queueItem.type
 
                 local duration = queueItem.type == "spell" and DpsHelper.Utils:GetDebuffRemainingTime("target", spellName) or 0
                 if duration > 0 then
@@ -306,13 +199,6 @@ function DpsHelper.UI:Update()
                 else
                     actionFrame.durationBar:Hide()
                     actionFrame.duration = 0
-                end
-
-                actionFrame.spellText:SetText(i == 1 and spellName or "")
-                if i == 1 then
-                    actionFrame.spellText:Show()
-                else
-                    actionFrame.spellText:Hide()
                 end
                 actionFrame:SetAlpha(1.0 - (i - 1) * 0.15)
             else
