@@ -89,15 +89,12 @@ Contributions are welcome! To contribute:
 
 ## Donations
 
-If you find DpsHelper useful and want to support its development, consider making a donation to keep the project alive and fund new features. Cryptocurrency donations are preferred:
+Buy me a coffee :coffee: :
 
-- **Bitcoin (BTC)**: `bc1qexampleaddress1234567890abcdef1234567890`
-- **Ethereum (ETH)**: `0xExampleAddress1234567890ABCDEF1234567890`
-- **USDT (ERC-20)**: `0xExampleAddress1234567890ABCDEF1234567890`
+- **Bitcoin (BTC)**: `bc1pga9yrw9588y0vp33vufsd70tar2wc8c9sq8hxvr4s03fjuvl46hs39yjjv`
+- **Ethereum (ETH)**: `0x6addc8fdb7a4a87da8679e947c39058d64f0fb60`
+- **Solana (SOL)**: `4pW5FEo36j1MntLhZLZn7CY3iYWk5vpdQwRmPpk3NBHa`
 
-*Please replace the above addresses with your actual wallet addresses before sharing.*
-
-Your support helps cover development time, testing, and server costs. Thank you for contributing to the WoW community!
 
 ## License
 
@@ -107,8 +104,8 @@ DpsHelper is released under the [MIT License](LICENSE). Feel free to use, modify
 
 For support or feedback:
 - [GitHub repository link]
-- [Discord server link]
-- [Other contact method, e.g., email or forum]
+- 
+- [sevenk@live.com]
 
 ---
 
