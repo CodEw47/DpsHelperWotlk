@@ -1,7 +1,7 @@
 # DpsHelper - WoW WotLK Addon
 
 **DpsHelper** is an addon for *World of Warcraft: Wrath of the Lich King* (interface 30400) designed to assist players in optimizing their DPS rotations, managing buffs and debuffs, and maximizing combat performance. With support for multiple classes and specializations, the addon is lightweight, configurable, and highly customizable, catering to both casual players and hardcore raiders.
-![alt text](img/warrior-fury-rotation.png)
+![alt text](img/image.png)
 ## Features
 
 - **Intelligent Rotations**: Dynamic ability suggestions based on resources (energy, rage, mana, etc.), combo points, buffs, debuffs, and combat conditions (multiple targets, bosses, etc.).
